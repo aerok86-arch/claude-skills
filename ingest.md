@@ -43,6 +43,16 @@ allowed-tools: Read, Write, Edit, Bash, Agent, Glob, Grep, mcp__claude_ai_Notion
 | **마크다운/텍스트 파일** | 직접 Read |
 | **paste 텍스트** | 그대로 사용 |
 
+### 📚 BOOK MODE — 읽고 나서 ingest할 때 추가 입력 수집 (source_type=books)
+
+사용자가 **이미 읽은 책**을 ingest할 때는 본문 확보 직후 다음을 확인:
+
+1. **독서 메모·밑줄 있는가?** — 있으면 그대로 붙여달라고 요청 (1회). 없으면 건너뜀.
+2. **챕터 목차** — PDF에서 자동 추출, 실패 시 사용자에게 복사 붙여넣기 요청.
+3. **읽은 시점 기록** — `read_date: YYYY-MM` frontmatter에 추가.
+
+독서 메모가 있으면 이후 모든 단계에서 **본문 원문과 메모를 병렬로 참조**해 사용자 관점이 summary에 스며들게 할 것.
+
 ## STEP 2 — source_type 자동 추정 (CLAUDE.md §2.1.1)
 
 - URL 포함 → `articles`
@@ -69,6 +79,7 @@ type: source
 source_type: article | deal | book | ...
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
+read_date: YYYY-MM          # books: 읽은 연월
 tags: [도메인/투자/PE, 타입/아티클, 상태/active]
 title: "원제목"
 author: "작성자"
@@ -83,6 +94,56 @@ related: "[[YYYY-MM-DD-... - 요약]]"
 - 본문: 핵심 요약 → 주요 Takeaways → 언급된 개념/인물 → 본인 의견·반대 의견 → 연결·추가 탐색
 
 **큰 raw (PDF 50MB+)**: vault 복사 vs 외부 참조 결정. 단일 자산이고 가치 높으면 vault 내장 OK (Genesis 피치북 108MB 선례), 23GB급은 외부 참조만 (SV 트랙레코드 선례).
+
+---
+
+### 📚 BOOK 전용 summary 템플릿 (source_type=books)
+
+일반 summary보다 훨씬 풍부하게 작성. 아래 섹션을 모두 포함:
+
+```markdown
+## 한 줄 핵심
+<저자가 책 전체로 말하려는 단 하나의 주장>
+
+## 저자 프레임워크 / 멘탈모델
+<이 책이 제시하는 핵심 사고 틀, 개념 구조, 원칙 체계>
+- 모델명: 설명
+- 모델명: 설명
+(재사용 가능한 추상 개념 위주. wiki concepts/ 승급 후보)
+
+## 챕터별 핵심
+| 챕터 | 핵심 주장 | 기억할 것 |
+|---|---|---|
+| 1. 제목 | | |
+| 2. 제목 | | |
+...
+
+## 주요 인용구
+> "직접 인용 1" — p.XX
+> "직접 인용 2" — p.XX
+(3~10개. 다른 문서에서 재인용할 만한 것 위주)
+
+## 사용자 독서 메모 통합
+<사용자가 붙여준 밑줄·메모를 원문 맥락에 연결해 서술>
+
+## 주요 Takeaways
+1. ...
+2. ...
+
+## 언급된 개념·인물·회사
+[[개념1]], [[개념2]], [[인물1]], [[회사1]] ...
+
+## 본인 의견 / 비판적 시각
+<동의하는 점, 의문점, 반대 의견>
+
+## SVI 시사점
+<PE 운용 실무 관점에서의 적용 포인트>
+
+## 연결·추가 탐색
+- 연결 wiki 페이지: [[...]]
+- 다음에 읽을 책: ...
+- 검증 필요 주장: ...
+```
 
 ## STEP 4 — 기존 wiki 페이지 append (가장 중요)
 
@@ -99,6 +160,12 @@ related: "[[YYYY-MM-DD-... - 요약]]"
 
 **watchlist 6사 ([[리벨리온]]·[[삼성전자]]·[[NVIDIA]]·[[Tesla]]·[[Palantir]]·[[엘앤씨바이오]])는 「누적 관찰」 표에 한 행 append**.
 
+**📚 BOOK 추가 규칙**:
+- 챕터별 핵심 테이블에서 추출한 개념 후보 **모두** 점검 (articles보다 범위 넓게)
+- 인용구 섹션의 인물명 → `02-Wiki/people/`에 wikilink 삽입
+- 저자 프레임워크의 모델명 → `02-Wiki/frameworks/` 또는 `concepts/`에 연결
+- 기존 wiki 페이지에 **"이 책에서 언급됨"** 행 추가 시 인용구 1개도 함께 붙임
+
 **검증분/정정분 흡수 패턴** (v1→v2→v3→v4 같은 경우, [[feedback-brain-vault-ingest-workflow]] 참조):
 - 기존 v1 페이지 frontmatter에 `vN_verification`/`vN_primary_source`/`vN_pe_agent` 키 추가
 - 상단에 ⚠️ 정정/업데이트 배너
@@ -112,6 +179,13 @@ related: "[[YYYY-MM-DD-... - 요약]]"
 - **deal**: 회수 완료된 케이스 스터디 또는 진행 중 활성 딜
 
 **page 양산 자제 원칙**: 1건 source ingest 시 신규 wiki page는 0~2개 권장. 251사 SV 트랙레코드처럼 큰 dataset도 per-company 페이지 X.
+
+**📚 BOOK 완화 규칙** (books는 더 관대하게 승급):
+- **frameworks/**: 저자 고유 프레임워크·멘탈모델 → **1회 등장해도 즉시 승급** (책이 primary source이므로)
+- **concepts/**: 책에서 상세히 정의된 개념 → 1회도 OK, 단 정의·설명·출처 명시 필수
+- **people/**: 책에서 핵심 인물로 다뤄지는 사람 → 승급 (단순 언급은 wikilink만)
+- **1권 ingest 시 신규 wiki page 0~4개** (일반 source 0~2개보다 완화)
+- 승급 기준: "다른 source를 읽다가 이 페이지를 다시 참조할 것 같은가?"
 
 ## STEP 6 — `00-Meta/index.md` 갱신
 
@@ -160,6 +234,25 @@ Windows는 launchd 미설치라 수동 — 사용자에게 안내만.
 - [ ] 신규 폴더 만들지 않았는가 (7개 고정)
 - [ ] 응답은 한국어 음슴체인가
 - [ ] (macOS) 대시보드 재빌드 했는가
+
+**📚 BOOK 추가 체크**:
+- [ ] 챕터별 핵심 테이블 작성했는가
+- [ ] 저자 프레임워크/멘탈모델 섹션 있는가
+- [ ] 인용구 3개+ 추출했는가 (p.XX 포함)
+- [ ] 사용자 독서 메모가 있었다면 통합했는가
+- [ ] `read_date: YYYY-MM` frontmatter 있는가
+- [ ] 프레임워크·핵심 개념 wiki 승급 검토했는가
+
+---
+
+## Karpathy LLM Wiki 패턴 (운영 참고)
+
+Karpathy(2026.04)가 정의한 3-오퍼레이션:
+- **Ingest** (본 skill): 소스 → raw 보존 → wiki 업데이트 (현재 구현됨)
+- **Query**: wiki 기반 질문 → 가치 있는 답변은 새 wiki 페이지로 저장 ("탐색이 지식이 된다")
+- **Lint**: 주기적 헬스체크 — 고아 페이지, 모순, 오래된 정보 탐지 (`/lint-wiki` 커맨드 예정)
+
+**index.md는 에이전트의 나침반**: Query 시 항상 index.md부터 읽어야 관련 파일을 빠르게 탐색 가능.
 
 ## 사용 예시
 
