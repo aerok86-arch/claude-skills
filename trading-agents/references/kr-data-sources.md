@@ -36,13 +36,16 @@
 
 ## 4. Price / Technical (시세·기술적 지표)
 
-연결된 MCP 중 KRX 실시간 시세 전용 도구가 없으므로 `WebFetch`로 공개 페이지를 사용한다:
+연결된 MCP 중 KRX 실시간 시세 전용 도구가 없어 `WebFetch`로 공개 페이지를 시도하는데, **이 환경에서는 소스별로 되고 안 되고가 갈린다** (2026-07-13 확인):
 
-- `https://finance.naver.com/item/main.naver?code=<6자리코드>` — 현재가, 등락률, 시가총액, PER/PBR, 외국인 보유율, 52주 최고/최저
-- `https://finance.naver.com/item/sise_day.naver?code=<6자리코드>` — 일별 시세(최근 며칠 추세 파악용)
-- `https://finance.naver.com/item/frgn.naver?code=<6자리코드>` — 외국인/기관 수급 동향
+- ❌ `finance.naver.com` — 이 세션/환경에서 WebFetch 자체가 차단됨("unable to fetch"). 시도해서 시간 낭비하지 말 것.
+- ❌ `finance.daum.net` — 차단은 안 되지만 JS 렌더링이라 WebFetch로는 빈 껍데기(네비게이션·법적고지)만 나옴. 실질적으로 못 쓴다.
+- ✅ **`https://alphasquare.co.kr/home/stock-summary?code=<6자리코드>`** — 정상 작동. 현재가, 등락률, PER/PBR(업종평균 비교 포함), ROE, 배당수익률, 시가총액, **52주 최고/최저**까지 확보 가능. **이걸 1순위로 사용.**
+  - RSI 등 일부 지표는 유료 멤버십 뒤에 있어 안 나올 수 있음 — 이 경우 아래 WebSearch로 보완.
 
-RSI/MACD 같은 정량 지표는 이 페이지들에 직접 나오지 않을 수 있다 — 이 경우 최근 가격 흐름(상승/하락/횡보, 거래량 변화)으로 정성 판단하고 "정량 지표 미확인"이라고 명시한다. 정확한 수치가 꼭 필요하면 `WebSearch`로 "<종목명> RSI MACD" 검색해 증권사/포털 제공 값을 인용하고 출처를 남긴다.
+**우선순위**: ① `alphasquare.co.kr` WebFetch 시도 → ② 안 되거나 부족하면 `WebSearch`로 `"<종목명> 목표주가 컨센서스"`, `"<종목명> RSI MACD 이동평균"` 검색해 증권사/포털 제공 값을 인용하고 출처를 남긴다 → ③ 그래도 없으면 최근 가격 흐름(상승/하락/횡보, 거래량 변화, 뉴스에 인용된 등락률)으로 정성 판단하고 "정량 지표 미확인"이라고 명시한다.
+
+새 세션에서 alphasquare가 막혀 있거나 페이지 구조가 바뀌었다면, 매번 재시도하지 말고 바로 WebSearch 경로로 넘어간다 — 소스 가용성은 세션마다 바뀔 수 있으므로 이 목록을 절대적 진실로 취급하지 말고 실제 호출 결과를 우선한다.
 
 ## 주의사항
 
